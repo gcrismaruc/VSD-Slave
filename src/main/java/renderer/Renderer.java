@@ -33,13 +33,11 @@ public class Renderer {
     private static final float FAR_PLANE = 1000;
 
     private Matrix4f projectionMatrix;
-    private ProcessedObject processedObject;
 
     byte[] depth = new byte[DisplayManager.WIDTH * DisplayManager.HEIGHT * 4];
     byte[] pxs = new byte[DisplayManager.WIDTH * DisplayManager.HEIGHT * 3];
 
-    public Renderer(StaticShader staticShader, ProcessedObject processedObject) {
-        this.processedObject = processedObject;
+    public Renderer(StaticShader staticShader) {
         createProjectionMatrix();
         staticShader.start();
         staticShader.loadProjectionMatrix(projectionMatrix);
@@ -99,15 +97,15 @@ public class Renderer {
         depthBuffer.get(depth);
         pixels.get(pxs);
 
-        processedObject.setDepthBuffer(depth);
-        processedObject.setPixels(pxs);
+//        processedObject.setDepthBuffer(depth);
+//        processedObject.setPixels(pxs);
 
         GL20.glDisableVertexAttribArray(0);
         GL20.glDisableVertexAttribArray(1);
         GL20.glDisableVertexAttribArray(2);
         GL30.glBindVertexArray(0);
 
-        return processedObject;
+        return new ProcessedObject(depth, pxs);
     }
 
 }
