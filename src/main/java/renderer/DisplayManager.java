@@ -11,7 +11,7 @@ public class DisplayManager {
     public static final int WIDTH = 1280;
     public static final int HEIGHT = 720;
     private static final int FPS_CAP = 60;
-    private static final String TITLE = "Our First Display";
+    private static final String TITLE = "Slave";
 
     /**
      * Creates a display window on which we can render our game. The dimensions

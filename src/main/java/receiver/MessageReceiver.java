@@ -5,33 +5,42 @@ import entities.ProcessingObject;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.ObjectMessage;
-import javax.jms.Session;
 
 public class MessageReceiver implements Runnable{
 
-    private Session session;
     private MessageConsumer messageConsumer;
     private static int TIMEOUT = 10000;
     ProcessingObject processingObject;
+    private boolean needToConsume = true;
 
-    public MessageReceiver(Session session, MessageConsumer messageConsumer) {
-        this.session = session;
+    public MessageReceiver(MessageConsumer messageConsumer) {
         this.messageConsumer = messageConsumer;
     }
 
     @Override
     public void run() {
-        while(true) {
+        while(needToConsume) {
             try {
+                System.out.println("here");
                 Message message = messageConsumer.receive(TIMEOUT);
                 ObjectMessage objectMessage = (ObjectMessage) message;
 
                 processingObject = (ProcessingObject) objectMessage.getObject();
-                Thread.sleep(100);
+                needToConsume = false;
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    public MessageReceiver setNeedToConsume(boolean needToConsume) {
+        this.needToConsume = needToConsume;
+        return this;
     }
 
     public ProcessingObject getProcessingObject() {
@@ -41,5 +50,9 @@ public class MessageReceiver implements Runnable{
     public MessageReceiver setProcessingObject(ProcessingObject processingObject) {
         this.processingObject = processingObject;
         return this;
+    }
+
+    public boolean isNeedToConsume() {
+        return needToConsume;
     }
 }

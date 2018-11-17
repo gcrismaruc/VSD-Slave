@@ -53,10 +53,6 @@ public class Camera {
         } else if (dWheel > 0){
             position.z -= MOUSE_VELOCITY;
         }
-
-//        System.out.println("X = " + position.x + " Y = " + position.y + " Z = " + position.z);
-
-
     }
     public Vector3f getPosition() {
         return position;

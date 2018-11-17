@@ -2,6 +2,7 @@ import entities.Camera;
 import entities.Entity;
 import entities.Light;
 import entities.ProcessedObject;
+import entities.ProcessingObject;
 import models.RawModel;
 import models.TexturedModel;
 import org.lwjgl.opengl.Display;
@@ -25,6 +26,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -33,11 +35,9 @@ public class Main {
         DisplayManager.createDisplay();
         Loader loader = new Loader();
         StaticShader shader = new StaticShader();
-        //        ProcessedObject processedObject = new ProcessedObject();
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
         Renderer renderer = new Renderer(shader);
 
-        //        SendingThread sendingThread = new SendingThread();
         CompressingThread compressingThread = new CompressingThread();
         try {
 
@@ -58,10 +58,10 @@ public class Main {
 
             //Start receiving objects
             MessageConsumer messageConsumer = consumerSession.createConsumer(slaveQueue);
-            MessageReceiver receiver = new MessageReceiver(consumerSession, messageConsumer);
+            MessageReceiver receiver = new MessageReceiver(messageConsumer);
+            executorService.execute(receiver);
 
-            Thread recvThread = new Thread(receiver);
-            recvThread.start();
+            SendingThread sendingThread = new SendingThread().setMessageReceiver(receiver);
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
             Camera camera = new Camera();
@@ -70,7 +70,9 @@ public class Main {
                             "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\stall.png"));
 
             while (!Display.isCloseRequested()) {
-                if (null != receiver.getProcessingObject()) {
+                ProcessingObject processingObject = receiver.getProcessingObject();
+
+                if (null != processingObject && !processingObject.isConsumed()) {
                     RawModel model = ObjLoader
                             .loadObjFile(
                                     "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\" + receiver
@@ -79,26 +81,36 @@ public class Main {
                     TexturedModel texturedModel = new TexturedModel(model, texture);
 
                     Entity entity = new Entity(texturedModel,
-                            new Vector3f(receiver.getProcessingObject().getX(),
-                                    receiver.getProcessingObject().getY(),
-                                    receiver.getProcessingObject().getZ()), 0, 0, 0, 1);
+                            new Vector3f(processingObject.getX(),
+                                    processingObject.getY(),
+                                    processingObject.getZ()), 0, 0, 0, 1);
 
-                    entity.increaseRotation(0f, receiver.getProcessingObject().getRy(), 0.0f);
-                    //            entity.increasePosition(0.0f, 0.0f, 0.1f);
+                    System.out.println(
+                            "Processing object: " + processingObject.getObjectName()
+                                    + " Y = "
+                                    + processingObject.getRy());
+
+                    entity.increaseRotation(0f, processingObject.getRy(), 0.0f);
                     camera.move();
                     renderer.prepare();
                     shader.start();
                     shader.loadLight(light);
                     shader.loadViewMatrix(camera);
+
                     ProcessedObject processedObject = renderer.render(entity, shader);
                     DisplayManager.updateDisplay();
 
-                    SendingThread sendingThread = new SendingThread()
+                    sendingThread
                             .setCompressingThread(compressingThread)
                             .setMessageProducer(messageProducer)
                             .setSession(producerSession)
                             .setProcessedObject(processedObject);
                     executorService.execute(sendingThread);
+
+                    processingObject.setConsumed(true);
+
+                    executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
+                    executorService.execute(receiver);
                 }
             }
             connection.close();

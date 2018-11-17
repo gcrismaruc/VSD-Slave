@@ -1,4 +1,5 @@
 import entities.ProcessedObject;
+import receiver.MessageReceiver;
 
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
@@ -13,6 +14,7 @@ public class SendingThread implements Runnable {
     private ProcessedObject processedObject;
     private CompressingThread compressingThread;
     private MessageProducer messageProducer;
+    private MessageReceiver messageReceiver;
     private Session session;
 
     public SendingThread(ProcessedObject processedObject, CompressingThread compressingThread) {
@@ -25,7 +27,6 @@ public class SendingThread implements Runnable {
 
     @Override
     public void run() {
-
         compressingThread.setObject(processedObject);
         compressingThread.run();
         ObjectMessage objectMessage = null;
@@ -39,11 +40,13 @@ public class SendingThread implements Runnable {
         try {
             messageProducer.send(objectMessage, DELIVERY_MODE, Message.DEFAULT_PRIORITY,
                     Message.DEFAULT_TIME_TO_LIVE);
+            messageReceiver.setNeedToConsume(true);
         } catch (JMSException e) {
             e.printStackTrace();
         }
-
     }
+
+
 
     public MessageProducer getMessageProducer() {
         return messageProducer;
@@ -51,6 +54,15 @@ public class SendingThread implements Runnable {
 
     public SendingThread setMessageProducer(MessageProducer messageProducer) {
         this.messageProducer = messageProducer;
+        return this;
+    }
+
+    public MessageReceiver getMessageReceiver() {
+        return messageReceiver;
+    }
+
+    public SendingThread setMessageReceiver(MessageReceiver messageReceiver) {
+        this.messageReceiver = messageReceiver;
         return this;
     }
 
