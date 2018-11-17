@@ -7,6 +7,8 @@ import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
+import java.time.Duration;
+import java.time.Instant;
 
 public class SendingThread implements Runnable {
     private static final int DELIVERY_MODE = DeliveryMode.NON_PERSISTENT;
@@ -27,6 +29,7 @@ public class SendingThread implements Runnable {
 
     @Override
     public void run() {
+        Instant start = Instant.now();
         compressingThread.setObject(processedObject);
         compressingThread.run();
         ObjectMessage objectMessage = null;
@@ -44,6 +47,8 @@ public class SendingThread implements Runnable {
         } catch (JMSException e) {
             e.printStackTrace();
         }
+
+        System.out.println("Sending time: " + Duration.between(start, Instant.now()).toMillis() + " ms.");
     }
 
 

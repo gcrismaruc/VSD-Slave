@@ -24,6 +24,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +75,9 @@ public class Main {
                 ProcessingObject processingObject = receiver.getProcessingObject();
 
                 if (null != processingObject && !processingObject.isConsumed()) {
+                    Instant start = Instant.now();
+
+                    Instant cameraRendering = Instant.now();
                     RawModel model = ObjLoader
                             .loadObjFile(
                                     "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\" + receiver
@@ -85,10 +90,10 @@ public class Main {
                                     processingObject.getY(),
                                     processingObject.getZ()), 0, 0, 0, 1);
 
-                    System.out.println(
-                            "Processing object: " + processingObject.getObjectName()
-                                    + " Y = "
-                                    + processingObject.getRy());
+//                    System.out.println(
+//                            "Processing object: " + processingObject.getObjectName()
+//                                    + " Y = "
+//                                    + processingObject.getRy());
 
                     entity.increaseRotation(0f, processingObject.getRy(), 0.0f);
                     camera.move();
@@ -96,6 +101,7 @@ public class Main {
                     shader.start();
                     shader.loadLight(light);
                     shader.loadViewMatrix(camera);
+                    System.out.println("Camera shaders time = " + Duration.between(cameraRendering, Instant.now()).toMillis() + " ms.");
 
                     ProcessedObject processedObject = renderer.render(entity, shader);
                     DisplayManager.updateDisplay();
@@ -109,8 +115,10 @@ public class Main {
 
                     processingObject.setConsumed(true);
 
-                    executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
+                    executorService.awaitTermination(50, TimeUnit.MILLISECONDS);
                     executorService.execute(receiver);
+                    System.out.println("Total loop time = " + Duration.between(start, Instant.now()).toMillis() +  " ms.");
+                    System.out.println("------------------------------------------------------");
                 }
             }
             connection.close();
