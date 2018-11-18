@@ -1,10 +1,9 @@
 package renderer;
 
 import entities.Entity;
-import entities.ProcessedObject;
+import entities.Frame;
 import models.RawModel;
 import models.TexturedModel;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -14,12 +13,8 @@ import org.lwjgl.util.vector.Matrix4f;
 import shaders.StaticShader;
 import toolBox.Maths;
 
-import java.nio.ByteBuffer;
-
-import static org.lwjgl.opengl.GL11.GL_DEPTH_COMPONENT;
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_RGB;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Handles the rendering of a model to the screen.
@@ -34,20 +29,68 @@ public class Renderer {
 
     private Matrix4f projectionMatrix;
 
+    private StaticShader shader;
+
     byte[] depth = new byte[DisplayManager.WIDTH * DisplayManager.HEIGHT * 4];
     byte[] pxs = new byte[DisplayManager.WIDTH * DisplayManager.HEIGHT * 3];
 
     public Renderer(StaticShader staticShader) {
+        this.shader = staticShader;
+        GL11.glEnable(GL11.GL_CULL_FACE);
+        GL11.glEnable(GL11.GL_BACK);
         createProjectionMatrix();
         staticShader.start();
         staticShader.loadProjectionMatrix(projectionMatrix);
         staticShader.stop();
     }
 
+    public void render(Frame frame) {
+
+        Map<TexturedModel, List<Entity>> entities = frame.getEntities();
+        entities.forEach((model, entity) -> {
+            prepareTexturedModel(model);
+
+            entities.get(model).forEach(entity1 -> {
+                prepareInstance(entity1);
+                GL11.glDrawElements(GL11.GL_TRIANGLES, model.getRawModel().getVertexCount(),
+                        GL11.GL_UNSIGNED_INT, 0);
+            });
+
+            unbindTexturedModel();
+        });
+    }
+
+    private void prepareTexturedModel(TexturedModel model) {
+        RawModel rawModel = model.getRawModel();
+
+        GL30.glBindVertexArray(model.getRawModel().getVaoID());
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
+        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getModelTexture().getTextureID());
+    }
+
+    private void unbindTexturedModel() {
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+        GL30.glBindVertexArray(0);
+    }
+
+    private void prepareInstance(Entity entity) {
+        Matrix4f transformationMatrix = Maths
+                .createTransformationMatrix(entity.getPosition(), entity.getRotX(),
+                        entity.getRotY(), entity.getRotZ(), entity.getScale());
+        shader.loadTransformationMatrix(transformationMatrix);
+    }
+
     public void prepare() {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glClearColor(1, 1, 1, 1);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
     }
 
     private void createProjectionMatrix() {
@@ -65,47 +108,47 @@ public class Renderer {
         projectionMatrix.m33 = 0;
     }
 
-    public ProcessedObject render(Entity entity, StaticShader shader) {
-        TexturedModel model = entity.getModel();
-        RawModel rawModel = model.getRawModel();
-
-        GL30.glBindVertexArray(model.getRawModel().getVaoID());
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
-
-        Matrix4f transformationMatrix = Maths
-                .createTransformationMatrix(entity.getPosition(), entity.getRotX(),
-                        entity.getRotY(), entity.getRotZ(), entity.getScale());
-        shader.loadTransformationMatrix(transformationMatrix);
-
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getModelTexture().getTextureID());
-        GL11.glDrawElements(GL11.GL_TRIANGLES, rawModel.getVertexCount(),
-                GL11.GL_UNSIGNED_INT, 0);
-
-        ByteBuffer depthBuffer = BufferUtils
-                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
-        ByteBuffer pixels = BufferUtils
-                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
-
-        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_DEPTH_COMPONENT,
-                GL_FLOAT, depthBuffer);
-        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_RGB,
-                GL_UNSIGNED_BYTE, pixels);
-
-        depthBuffer.get(depth);
-        pixels.get(pxs);
-
-//        processedObject.setDepthBuffer(depth);
-//        processedObject.setPixels(pxs);
-
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2);
-        GL30.glBindVertexArray(0);
-
-        return new ProcessedObject(depth, pxs);
-    }
+//    public ProcessedObject render(Entity entity, StaticShader shader) {
+//        TexturedModel model = entity.getModel();
+//        RawModel rawModel = model.getRawModel();
+//
+//        GL30.glBindVertexArray(model.getRawModel().getVaoID());
+//        GL20.glEnableVertexAttribArray(0);
+//        GL20.glEnableVertexAttribArray(1);
+//        GL20.glEnableVertexAttribArray(2);
+//
+//        Matrix4f transformationMatrix = Maths
+//                .createTransformationMatrix(entity.getPosition(), entity.getRotX(),
+//                        entity.getRotY(), entity.getRotZ(), entity.getScale());
+//        shader.loadTransformationMatrix(transformationMatrix);
+//
+//        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+//        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getModelTexture().getTextureID());
+//        GL11.glDrawElements(GL11.GL_TRIANGLES, rawModel.getVertexCount(),
+//                GL11.GL_UNSIGNED_INT, 0);
+//
+//        ByteBuffer depthBuffer = BufferUtils
+//                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
+//        ByteBuffer pixels = BufferUtils
+//                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
+//
+//        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_DEPTH_COMPONENT,
+//                GL_FLOAT, depthBuffer);
+//        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_RGB,
+//                GL_UNSIGNED_BYTE, pixels);
+//
+//        depthBuffer.get(depth);
+//        pixels.get(pxs);
+//
+//        //        processedObject.setDepthBuffer(depth);
+//        //        processedObject.setPixels(pxs);
+//
+//        GL20.glDisableVertexAttribArray(0);
+//        GL20.glDisableVertexAttribArray(1);
+//        GL20.glDisableVertexAttribArray(2);
+//        GL30.glBindVertexArray(0);
+//
+//        return new ProcessedObject(depth, pxs);
+//    }
 
 }
