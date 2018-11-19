@@ -1,6 +1,6 @@
 package receiver;
 
-import entities.ProcessingObject;
+import entities.ProcessingFrame;
 
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -12,7 +12,7 @@ public class MessageReceiver implements Runnable {
 
     private MessageConsumer messageConsumer;
     private static int TIMEOUT = 10000;
-    ProcessingObject processingObject;
+    ProcessingFrame processingFrame;
     private boolean needToConsume = true;
 
     public MessageReceiver(MessageConsumer messageConsumer) {
@@ -31,7 +31,7 @@ public class MessageReceiver implements Runnable {
 
                 ObjectMessage objectMessage = (ObjectMessage) message;
 
-                processingObject = (ProcessingObject) objectMessage.getObject();
+                processingFrame = (ProcessingFrame) objectMessage.getObject();
                 needToConsume = false;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -44,19 +44,21 @@ public class MessageReceiver implements Runnable {
         }
     }
 
+    public ProcessingFrame getProcessingFrame() {
+        return processingFrame;
+    }
+
+    public MessageReceiver setProcessingFrame(ProcessingFrame processingFrame) {
+        this.processingFrame = processingFrame;
+        return this;
+    }
+
     public MessageReceiver setNeedToConsume(boolean needToConsume) {
         this.needToConsume = needToConsume;
         return this;
     }
 
-    public ProcessingObject getProcessingObject() {
-        return processingObject;
-    }
 
-    public MessageReceiver setProcessingObject(ProcessingObject processingObject) {
-        this.processingObject = processingObject;
-        return this;
-    }
 
     public boolean isNeedToConsume() {
         return needToConsume;

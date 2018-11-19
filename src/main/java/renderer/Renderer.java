@@ -108,47 +108,47 @@ public class Renderer {
         projectionMatrix.m33 = 0;
     }
 
-//    public ProcessedObject render(Entity entity, StaticShader shader) {
-//        TexturedModel model = entity.getModel();
-//        RawModel rawModel = model.getRawModel();
-//
-//        GL30.glBindVertexArray(model.getRawModel().getVaoID());
-//        GL20.glEnableVertexAttribArray(0);
-//        GL20.glEnableVertexAttribArray(1);
-//        GL20.glEnableVertexAttribArray(2);
-//
-//        Matrix4f transformationMatrix = Maths
-//                .createTransformationMatrix(entity.getPosition(), entity.getRotX(),
-//                        entity.getRotY(), entity.getRotZ(), entity.getScale());
-//        shader.loadTransformationMatrix(transformationMatrix);
-//
-//        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-//        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getModelTexture().getTextureID());
-//        GL11.glDrawElements(GL11.GL_TRIANGLES, rawModel.getVertexCount(),
-//                GL11.GL_UNSIGNED_INT, 0);
-//
-//        ByteBuffer depthBuffer = BufferUtils
-//                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
-//        ByteBuffer pixels = BufferUtils
-//                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
-//
-//        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_DEPTH_COMPONENT,
-//                GL_FLOAT, depthBuffer);
-//        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_RGB,
-//                GL_UNSIGNED_BYTE, pixels);
-//
-//        depthBuffer.get(depth);
-//        pixels.get(pxs);
-//
-//        //        processedObject.setDepthBuffer(depth);
-//        //        processedObject.setPixels(pxs);
-//
-//        GL20.glDisableVertexAttribArray(0);
-//        GL20.glDisableVertexAttribArray(1);
-//        GL20.glDisableVertexAttribArray(2);
-//        GL30.glBindVertexArray(0);
-//
-//        return new ProcessedObject(depth, pxs);
-//    }
+    //    public ProcessedObject render(Entity entity, StaticShader shader) {
+    //        TexturedModel model = entity.getModel();
+    //        RawModel rawModel = model.getRawModel();
+    //
+    //        GL30.glBindVertexArray(model.getRawModel().getVaoID());
+    //        GL20.glEnableVertexAttribArray(0);
+    //        GL20.glEnableVertexAttribArray(1);
+    //        GL20.glEnableVertexAttribArray(2);
+    //
+    //        Matrix4f transformationMatrix = Maths
+    //                .createTransformationMatrix(entity.getPosition(), entity.getRotX(),
+    //                        entity.getRotY(), entity.getRotZ(), entity.getScale());
+    //        shader.loadTransformationMatrix(transformationMatrix);
+    //
+    //        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+    //        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getModelTexture().getTextureID());
+    //        GL11.glDrawElements(GL11.GL_TRIANGLES, rawModel.getVertexCount(),
+    //                GL11.GL_UNSIGNED_INT, 0);
+    //
+    //        ByteBuffer depthBuffer = BufferUtils
+    //                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
+    //        ByteBuffer pixels = BufferUtils
+    //                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
+    //
+    //        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_DEPTH_COMPONENT,
+    //                GL_FLOAT, depthBuffer);
+    //        GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_RGB,
+    //                GL_UNSIGNED_BYTE, pixels);
+    //
+    //        depthBuffer.get(depth);
+    //        pixels.get(pxs);
+    //
+    //        //        processedObject.setDepthBuffer(depth);
+    //        //        processedObject.setPixels(pxs);
+    //
+    //        GL20.glDisableVertexAttribArray(0);
+    //        GL20.glDisableVertexAttribArray(1);
+    //        GL20.glDisableVertexAttribArray(2);
+    //        GL30.glBindVertexArray(0);
+    //
+    //        return new ProcessedObject(depth, pxs);
+    //    }
 
 }
