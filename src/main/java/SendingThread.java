@@ -9,6 +9,8 @@ import javax.jms.ObjectMessage;
 import javax.jms.Session;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class SendingThread implements Runnable {
     private static final int DELIVERY_MODE = DeliveryMode.NON_PERSISTENT;
@@ -18,6 +20,7 @@ public class SendingThread implements Runnable {
     private MessageProducer messageProducer;
     private MessageReceiver messageReceiver;
     private Session session;
+    private ExecutorService executorService;
 
     public SendingThread(ProcessedObject processedObject, CompressingThread compressingThread) {
         this.processedObject = processedObject;
@@ -31,7 +34,14 @@ public class SendingThread implements Runnable {
     public void run() {
         Instant start = Instant.now();
         compressingThread.setObject(processedObject);
-        compressingThread.run();
+        executorService.execute(compressingThread);
+
+        try {
+            executorService.awaitTermination(20, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         ObjectMessage objectMessage = null;
         try {
             objectMessage = session
@@ -51,7 +61,14 @@ public class SendingThread implements Runnable {
         System.out.println("Sending time: " + Duration.between(start, Instant.now()).toMillis() + " ms.");
     }
 
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
 
+    public SendingThread setExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
+        return this;
+    }
 
     public MessageProducer getMessageProducer() {
         return messageProducer;

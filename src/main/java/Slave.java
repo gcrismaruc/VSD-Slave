@@ -67,21 +67,22 @@ public class Slave {
             MessageReceiver receiver = new MessageReceiver(messageConsumer);
             executorService.execute(receiver);
 
-            SendingThread sendingThread = new SendingThread().setMessageReceiver(receiver);
+            SendingThread sendingThread = new SendingThread().setMessageReceiver(receiver)
+                    .setExecutorService(executorService);
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
             Camera camera = new Camera();
             RawModel dragonModel = ObjLoader
                     .loadObjFile(
-                            "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\dragon.obj", loader);
+                            "src/main/resources/dragon.obj", loader);
 
             RawModel stallModel = ObjLoader
                     .loadObjFile(
-                            "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\stall.obj", loader);
+                            "src/main/resources/stall.obj", loader);
 
             ModelTexture texture = new ModelTexture(
                     loader.loadTexture(
-                            "D:\\Facultate\\VSD-Slave\\src\\main\\resources\\stall.png"));
+                            "src/main/resources/stall.png"));
             TexturedModel dragonTexturedModel = new TexturedModel(dragonModel, texture);
             TexturedModel stallTexturedModel = new TexturedModel(stallModel, texture);
 
@@ -123,22 +124,15 @@ public class Slave {
                 if (null != processingFrame && !processingFrame.isConsumed()) {
                     Instant start = Instant.now();
 
-                    System.out.println("Frame name: " + processingFrame.getName());
+                    //                    System.out.println("Frame name: " + processingFrame.getName());
 
                     Instant cameraRendering = Instant.now();
+                    camera.move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
 
-                    //                    System.out.println(
-                    //                            "Processing object: " + processingObject.getObjectName()
-                    //                                    + " Y = "
-                    //                                    + processingObject.getRy());
-
-                    //                    entity.increaseRotation(0f, processingObject.getRy(), 0.0f);
-                    //            entity.increaseRotation(0f, 1, 0.0f);
-
-                    camera.move();
-
-                    FrameUtils.prepareFrame(scene.getFrames().get(processingFrame.getName()), renderer);
+                    FrameUtils.prepareFrame(scene.getFrames().get(processingFrame.getName()),
+                            renderer);
                     ProcessedObject processedObject = renderer.render(light, camera);
+
                     System.out.println("Camera shaders time = " + Duration
                             .between(cameraRendering, Instant.now()).toMillis() + " ms.");
 

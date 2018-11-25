@@ -6,54 +6,60 @@ import org.lwjgl.util.vector.Vector3f;
 
 public class Camera {
     public static final float MOUSE_VELOCITY = 10f;
-    private Vector3f position = new Vector3f(0,0,0);
+    private Vector3f position = new Vector3f(0, 0, 0);
     private float pitch;
     private float yaw;
     private float roll;
 
-    public Camera(){
+    public Camera() {
 
     }
 
+    public void move(int keyboard, int mouseWheel) {
+        if (keyboard == Keyboard.KEY_DOWN) {
+            pitch -= 0.2f;
+        }
+        if (keyboard == Keyboard.KEY_UP) {
+            pitch += 0.2f;
+        }
+
+        if (keyboard == Keyboard.KEY_RIGHT) {
+            yaw -= 0.2f;
+        }
+        if (keyboard == Keyboard.KEY_LEFT) {
+            yaw += 0.2f;
+        }
+
+        if (mouseWheel < 0) {
+            position.z += MOUSE_VELOCITY;
+        } else if (mouseWheel > 0) {
+            position.z -= MOUSE_VELOCITY;
+        }
+    }
+
     public void move() {
-        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)){
-            pitch -= 0.9f;
+        if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
+            pitch -= 0.2f;
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_UP)){
-            pitch += 0.9f;
-        }
-        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)){
-            yaw += 0.9f;
-        }
-        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)){
-            yaw -= 0.9f;
+        if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
+            pitch += 0.2f;
         }
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_Z)){
-            position.x += 0.9f;
-            position.y += 0.9f;
+        if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+            yaw -= 0.2f;
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_Y)){
-            position.z += 0.9f;
-            position.x += 0.9f;
-        }
-        if(Keyboard.isKeyDown(Keyboard.KEY_X)){
-            position.y += 0.9f;
-            position.z += 0.9f;
-        }
-
-        if(Mouse.isButtonDown(0)) {
-            position.x -= Mouse.getDX() * 0.05f;
-            position.y -= Mouse.getDY() * 0.05f;
+        if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+            yaw += 0.2f;
         }
 
         int dWheel = Mouse.getDWheel();
         if (dWheel < 0) {
             position.z += MOUSE_VELOCITY;
-        } else if (dWheel > 0){
+        } else if (dWheel > 0) {
             position.z -= MOUSE_VELOCITY;
         }
     }
+
     public Vector3f getPosition() {
         return position;
     }
