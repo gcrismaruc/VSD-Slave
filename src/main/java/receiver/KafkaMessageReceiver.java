@@ -6,6 +6,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
+import java.time.Duration;
 import java.time.Instant;
 
 public class KafkaMessageReceiver implements Runnable {
@@ -29,7 +30,11 @@ public class KafkaMessageReceiver implements Runnable {
 
                 System.out.println("Trying to receive message from kafka...");
 
-                ConsumerRecords<String, ProcessingFrame> records = consumer.poll(1000);
+                ConsumerRecords<String, ProcessingFrame> records = consumer.poll(Duration.ofMillis(1000));
+
+                while (records.isEmpty()) {
+                    records = consumer.poll(Duration.ofMillis(1000));
+                }
 
                 for (ConsumerRecord<String, ProcessingFrame> record : records) {
                     System.out.printf("partition = %s, offset = %d, key = %s, value = %s\n",
@@ -41,12 +46,6 @@ public class KafkaMessageReceiver implements Runnable {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            //            try {
-            //                Thread.sleep(10);
-            //            } catch (InterruptedException e) {
-            //                e.printStackTrace();
-            //            }
-
         }
     }
 

@@ -11,6 +11,7 @@ import entities.Scene;
 import models.RawModel;
 import models.TexturedModel;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
 import receiver.KafkaMessageReceiver;
@@ -19,15 +20,8 @@ import renderer.Loader;
 import renderer.MasterRenderer;
 import textures.ModelTexture;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -51,18 +45,9 @@ public class Slave {
         CompressingThread compressingThread = new CompressingThread();
         try {
 
-            Context context = new InitialContext();
-
-            ConnectionFactory factory = (ConnectionFactory) context.lookup("myFactoryLookup");
-            Destination queue = (Destination) context.lookup("myQueueLookup");
-
-            Connection connection = factory.createConnection("admin", "admin");
-            connection.setExceptionListener(new MyExceptionListener());
-            connection.start();
-
-            Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            MessageProducer messageProducer = producerSession.createProducer(queue);
+            //Start sending requests to slaves
+            KafkaProducer<String, ProcessedObject> producer = new KafkaProducer<String, ProcessedObject>(
+                    getProducerProperty());
 
             //Start receiving objects
             KafkaConsumer<String, ProcessingFrame> consumer = new KafkaConsumer<String, ProcessingFrame>(
@@ -125,8 +110,6 @@ public class Slave {
                 if (null != processingFrame && !processingFrame.isConsumed()) {
                     Instant start = Instant.now();
 
-                    //                    System.out.println("Frame name: " + processingFrame.getName());
-
                     Instant cameraRendering = Instant.now();
                     camera.move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
 
@@ -137,10 +120,10 @@ public class Slave {
                     System.out.println("Camera shaders time = " + Duration
                             .between(cameraRendering, Instant.now()).toMillis() + " ms.");
 
-                    //                    DisplayManager.updateDisplay();
+                                        DisplayManager.updateDisplay();
 
                     sendingThread.setCompressingThread(compressingThread)
-                            .setMessageProducer(messageProducer).setSession(producerSession)
+                            .setMessageProducer(producer)
                             .setProcessedObject(processedObject);
                     executorService.execute(sendingThread);
 
@@ -154,7 +137,6 @@ public class Slave {
                     System.out.println("------------------------------------------------------");
                 }
             }
-            connection.close();
 
             renderer.cleanUp();
             loader.cleanUp();
@@ -190,8 +172,24 @@ public class Slave {
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", entities.ProcessingFrameDeserializer.class);
         properties.put("max.partition.fetch.bytes", "2097152");
-        properties.put("max.poll.records", "2");
+        properties.put("max.poll.records", "1");
         properties.put("group.id", "my-group");
+
+        return properties;
+    }
+
+    public static Properties getProducerProperty() {
+        Properties properties = new Properties();
+        properties.put("bootstrap.servers", "localhost:9092");
+        properties.put("acks", "0");
+        properties.put("retries", "1");
+        properties.put("batch.size", "20971520");
+        properties.put("linger.ms", "33");
+        properties.put("max.request.size", "20971520");
+        properties.put("compression.type", "gzip");
+        properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("value.serializer", entities.ProcessedObjectSerializer.class);
+        properties.put("kafka.topic", "slave-output");
 
         return properties;
     }

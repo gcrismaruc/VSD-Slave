@@ -1,25 +1,22 @@
 package main;
 
 import entities.ProcessedObject;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import receiver.KafkaMessageReceiver;
 
 import javax.jms.DeliveryMode;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
 import javax.jms.Session;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class SendingThread implements Runnable {
     private static final int DELIVERY_MODE = DeliveryMode.NON_PERSISTENT;
 
     private ProcessedObject processedObject;
     private CompressingThread compressingThread;
-    private MessageProducer messageProducer;
+    private KafkaProducer<String, ProcessedObject> messageProducer;
     private KafkaMessageReceiver messageReceiver;
     private Session session;
     private ExecutorService executorService;
@@ -35,32 +32,15 @@ public class SendingThread implements Runnable {
     @Override
     public void run() {
         Instant start = Instant.now();
-        compressingThread.setObject(processedObject);
-        executorService.execute(compressingThread);
 
-        try {
-            executorService.awaitTermination(20, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        messageProducer
+                .send(new ProducerRecord<>(Slave.getProducerProperty().getProperty("kafka.topic"),
+                        processedObject));
 
-        ObjectMessage objectMessage = null;
-        try {
-            objectMessage = session
-                    .createObjectMessage(compressingThread.getCompressedOutput());
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
+        messageReceiver.setNeedToConsume(true);
 
-        try {
-            messageProducer.send(objectMessage, DELIVERY_MODE, Message.DEFAULT_PRIORITY,
-                    Message.DEFAULT_TIME_TO_LIVE);
-            messageReceiver.setNeedToConsume(true);
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("Sending time: " + Duration.between(start, Instant.now()).toMillis() + " ms.");
+        System.out.println(
+                "Sending time: " + Duration.between(start, Instant.now()).toMillis() + " ms.");
     }
 
     public ExecutorService getExecutorService() {
@@ -72,11 +52,12 @@ public class SendingThread implements Runnable {
         return this;
     }
 
-    public MessageProducer getMessageProducer() {
+    public KafkaProducer<String, ProcessedObject> getMessageProducer() {
         return messageProducer;
     }
 
-    public SendingThread setMessageProducer(MessageProducer messageProducer) {
+    public SendingThread setMessageProducer(
+            KafkaProducer<String, ProcessedObject> messageProducer) {
         this.messageProducer = messageProducer;
         return this;
     }
