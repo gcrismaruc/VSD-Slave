@@ -1,5 +1,7 @@
+package main;
+
 import entities.ProcessedObject;
-import receiver.MessageReceiver;
+import receiver.KafkaMessageReceiver;
 
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
@@ -18,7 +20,7 @@ public class SendingThread implements Runnable {
     private ProcessedObject processedObject;
     private CompressingThread compressingThread;
     private MessageProducer messageProducer;
-    private MessageReceiver messageReceiver;
+    private KafkaMessageReceiver messageReceiver;
     private Session session;
     private ExecutorService executorService;
 
@@ -79,11 +81,11 @@ public class SendingThread implements Runnable {
         return this;
     }
 
-    public MessageReceiver getMessageReceiver() {
+    public KafkaMessageReceiver getMessageReceiver() {
         return messageReceiver;
     }
 
-    public SendingThread setMessageReceiver(MessageReceiver messageReceiver) {
+    public SendingThread setMessageReceiver(KafkaMessageReceiver messageReceiver) {
         this.messageReceiver = messageReceiver;
         return this;
     }

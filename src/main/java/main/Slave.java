@@ -1,3 +1,5 @@
+package main;
+
 import entities.Camera;
 import entities.Entity;
 import entities.Frame;
@@ -8,9 +10,10 @@ import entities.ProcessingFrame;
 import entities.Scene;
 import models.RawModel;
 import models.TexturedModel;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
-import receiver.MessageReceiver;
+import receiver.KafkaMessageReceiver;
 import renderer.DisplayManager;
 import renderer.Loader;
 import renderer.MasterRenderer;
@@ -21,17 +24,18 @@ import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,20 +55,22 @@ public class Slave {
 
             ConnectionFactory factory = (ConnectionFactory) context.lookup("myFactoryLookup");
             Destination queue = (Destination) context.lookup("myQueueLookup");
-            Destination slaveQueue = (Destination) context.lookup("slaveQueue");
 
             Connection connection = factory.createConnection("admin", "admin");
             connection.setExceptionListener(new MyExceptionListener());
             connection.start();
 
             Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Session consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             MessageProducer messageProducer = producerSession.createProducer(queue);
 
             //Start receiving objects
-            MessageConsumer messageConsumer = consumerSession.createConsumer(slaveQueue);
-            MessageReceiver receiver = new MessageReceiver(messageConsumer);
+            KafkaConsumer<String, ProcessingFrame> consumer = new KafkaConsumer<String, ProcessingFrame>(
+                    getConsumerProperties());
+            consumer.subscribe(
+                    Arrays.asList(Slave.getConsumerProperties().getProperty("kafka.topic")));
+
+            KafkaMessageReceiver receiver = new KafkaMessageReceiver(consumer);
             executorService.execute(receiver);
 
             SendingThread sendingThread = new SendingThread().setMessageReceiver(receiver)
@@ -72,31 +78,26 @@ public class Slave {
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
             Camera camera = new Camera();
-            RawModel dragonModel = ObjLoader
-                    .loadObjFile(
-                            "src/main/resources/dragon.obj", loader);
+            RawModel dragonModel = ObjLoader.loadObjFile("src/main/resources/dragon.obj", loader);
 
-            RawModel stallModel = ObjLoader
-                    .loadObjFile(
-                            "src/main/resources/stall.obj", loader);
+            RawModel stallModel = ObjLoader.loadObjFile("src/main/resources/stall.obj", loader);
 
             ModelTexture texture = new ModelTexture(
-                    loader.loadTexture(
-                            "src/main/resources/stall.png"));
+                    loader.loadTexture("src/main/resources/stall.png"));
             TexturedModel dragonTexturedModel = new TexturedModel(dragonModel, texture);
             TexturedModel stallTexturedModel = new TexturedModel(stallModel, texture);
 
-            Entity dragonEntityFrame1 = new Entity(dragonTexturedModel,
-                    new Vector3f(-10, 5, -65), 0, 0, 0, 1);
+            Entity dragonEntityFrame1 = new Entity(dragonTexturedModel, new Vector3f(-10, 5, -65),
+                    0, 0, 0, 1);
 
-            Entity stallEntityFrame1 = new Entity(stallTexturedModel,
-                    new Vector3f(-10, -5, -55), 0, 0, 0, 1);
+            Entity stallEntityFrame1 = new Entity(stallTexturedModel, new Vector3f(-10, -5, -55), 0,
+                    0, 0, 1);
 
-            Entity dragonEntityFrame2 = new Entity(dragonTexturedModel,
-                    new Vector3f(10, 5, -65), 0, 0, 0, 1);
+            Entity dragonEntityFrame2 = new Entity(dragonTexturedModel, new Vector3f(10, 5, -65), 0,
+                    0, 0, 1);
 
-            Entity stallEntityFrame2 = new Entity(stallTexturedModel,
-                    new Vector3f(10, -5, -55), 0, 0, 0, 1);
+            Entity stallEntityFrame2 = new Entity(stallTexturedModel, new Vector3f(10, -5, -55), 0,
+                    0, 0, 1);
 
             Map<TexturedModel, List<Entity>> entitiesFrame1 = new HashMap<>();
             entitiesFrame1.put(dragonTexturedModel, Collections.singletonList(dragonEntityFrame1));
@@ -136,12 +137,10 @@ public class Slave {
                     System.out.println("Camera shaders time = " + Duration
                             .between(cameraRendering, Instant.now()).toMillis() + " ms.");
 
-//                    DisplayManager.updateDisplay();
+                    //                    DisplayManager.updateDisplay();
 
-                    sendingThread
-                            .setCompressingThread(compressingThread)
-                            .setMessageProducer(messageProducer)
-                            .setSession(producerSession)
+                    sendingThread.setCompressingThread(compressingThread)
+                            .setMessageProducer(messageProducer).setSession(producerSession)
                             .setProcessedObject(processedObject);
                     executorService.execute(sendingThread);
 
@@ -159,14 +158,15 @@ public class Slave {
 
             renderer.cleanUp();
             loader.cleanUp();
-//            DisplayManager.closeDisplay();
+
+            //            DisplayManager.closeDisplay();
 
         } catch (Exception exp) {
             System.out.println("Caught exception, exiting.");
             exp.printStackTrace(System.out);
 
             loader.cleanUp();
-//            DisplayManager.closeDisplay();
+            //            DisplayManager.closeDisplay();
             System.exit(1);
 
         }
@@ -179,5 +179,20 @@ public class Slave {
             exception.printStackTrace(System.out);
             System.exit(1);
         }
+    }
+
+    public static Properties getConsumerProperties() {
+        Properties properties = new Properties();
+        properties.put("bootstrap.servers", "localhost:9092");
+        properties.put("kafka.topic", "slave-commands");
+        properties.put("compression.type", "gzip");
+        properties.put("key.deserializer",
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("value.deserializer", entities.ProcessingFrameDeserializer.class);
+        properties.put("max.partition.fetch.bytes", "2097152");
+        properties.put("max.poll.records", "2");
+        properties.put("group.id", "my-group");
+
+        return properties;
     }
 }

@@ -53,12 +53,12 @@
 //
 //    private static GLWindow window;
 //    private static Animator animator;
-//    static MeshObjectLoader.MeshArrays meshObject;
+//    static main.MeshObjectLoader.MeshArrays meshObject;
 //
 //    public static void main(String[] args) throws IOException {
 //
 //        InputStream inputStream = new FileInputStream("D:\\OpenGL\\src\\main\\resources\\PAN.obj");
-//        meshObject = MeshObjectLoader.loadModelMeshFromStream(inputStream);
+//        meshObject = main.MeshObjectLoader.loadModelMeshFromStream(inputStream);
 //
 //        new HelloTriangleSimple().setup();
 //    }
