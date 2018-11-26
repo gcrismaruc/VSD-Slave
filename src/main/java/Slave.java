@@ -136,7 +136,7 @@ public class Slave {
                     System.out.println("Camera shaders time = " + Duration
                             .between(cameraRendering, Instant.now()).toMillis() + " ms.");
 
-                    DisplayManager.updateDisplay();
+//                    DisplayManager.updateDisplay();
 
                     sendingThread
                             .setCompressingThread(compressingThread)
@@ -159,14 +159,14 @@ public class Slave {
 
             renderer.cleanUp();
             loader.cleanUp();
-            DisplayManager.closeDisplay();
+//            DisplayManager.closeDisplay();
 
         } catch (Exception exp) {
             System.out.println("Caught exception, exiting.");
             exp.printStackTrace(System.out);
 
             loader.cleanUp();
-            DisplayManager.closeDisplay();
+//            DisplayManager.closeDisplay();
             System.exit(1);
 
         }
