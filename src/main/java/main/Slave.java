@@ -128,6 +128,7 @@ public class Slave {
                     executorService.execute(sendingThread);
 
                     processingFrame.setConsumed(true);
+                    consumer.commitSync();
 
                     executorService.awaitTermination(50, TimeUnit.MILLISECONDS);
                     executorService.execute(receiver);
@@ -165,24 +166,27 @@ public class Slave {
 
     public static Properties getConsumerProperties() {
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", "localhost:9092");
+        properties.put("bootstrap.servers", "127.0.0.1:9092");
         properties.put("kafka.topic", "slave-commands");
+        properties.put("enable.auto.commit", "false");
         properties.put("compression.type", "gzip");
         properties.put("key.deserializer",
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", entities.ProcessingFrameDeserializer.class);
+//        properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("max.partition.fetch.bytes", "2097152");
         properties.put("max.poll.records", "1");
-        properties.put("group.id", "my-group");
+        properties.put("auto.offset.reset", "latest");
+        properties.put("group.id", "slave-group");
 
         return properties;
     }
 
     public static Properties getProducerProperty() {
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", "localhost:9092");
-        properties.put("acks", "0");
-        properties.put("retries", "1");
+        properties.put("bootstrap.servers", "127.0.0.1:9092");
+        properties.put("acks", "all");
+        properties.put("retries", "0");
         properties.put("batch.size", "20971520");
         properties.put("linger.ms", "33");
         properties.put("max.request.size", "20971520");

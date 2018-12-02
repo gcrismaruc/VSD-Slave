@@ -30,10 +30,10 @@ public class KafkaMessageReceiver implements Runnable {
 
                 System.out.println("Trying to receive message from kafka...");
 
-                ConsumerRecords<String, ProcessingFrame> records = consumer.poll(Duration.ofMillis(1000));
+                ConsumerRecords<String, ProcessingFrame> records = consumer.poll(Duration.ofMillis(20));
 
                 while (records.isEmpty()) {
-                    records = consumer.poll(Duration.ofMillis(1000));
+                    records = consumer.poll(Duration.ofMillis(20));
                 }
 
                 for (ConsumerRecord<String, ProcessingFrame> record : records) {
@@ -41,6 +41,8 @@ public class KafkaMessageReceiver implements Runnable {
                             record.partition(), record.offset(), record.key(), record.value());
                     processingFrame = record.value();
                 }
+//                consumer.commitSync();
+
 
                 needToConsume = false;
             } catch (Exception e) {

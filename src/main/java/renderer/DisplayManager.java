@@ -11,7 +11,7 @@ public class DisplayManager {
     public static final int WIDTH = 1280;
     public static final int HEIGHT = 720;
     private static final int FPS_CAP = 60;
-    private static final String TITLE = "main.Slave";
+    private static final String TITLE = "Slave";
 
     public static void createDisplay() {
         ContextAttribs attribs = new ContextAttribs(3, 2).withForwardCompatible(true).withProfileCore(true);
