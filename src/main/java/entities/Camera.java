@@ -17,17 +17,17 @@ public class Camera {
 
     public void move(int keyboard, int mouseWheel) {
         if (keyboard == Keyboard.KEY_DOWN) {
-            pitch -= 0.2f;
+            pitch -= 0.7f;
         }
         if (keyboard == Keyboard.KEY_UP) {
-            pitch += 0.2f;
+            pitch += 0.7f;
         }
 
         if (keyboard == Keyboard.KEY_RIGHT) {
-            yaw -= 0.2f;
+            yaw -= 0.7f;
         }
         if (keyboard == Keyboard.KEY_LEFT) {
-            yaw += 0.2f;
+            yaw += 0.7f;
         }
 
         if (mouseWheel < 0) {
