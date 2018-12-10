@@ -1,20 +1,15 @@
 import entities.Camera;
-import entities.Entity;
-import entities.Frame;
 import entities.FrameUtils;
 import entities.Light;
 import entities.ProcessedObject;
 import entities.ProcessingFrame;
 import entities.Scene;
-import models.RawModel;
-import models.TexturedModel;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
 import receiver.MessageReceiver;
 import renderer.DisplayManager;
 import renderer.Loader;
 import renderer.MasterRenderer;
-import textures.ModelTexture;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -28,10 +23,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -72,50 +63,10 @@ public class Slave {
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
             Camera camera = new Camera();
-            RawModel dragonModel = ObjLoader
-                    .loadObjFile(
-                            "src/main/resources/dragon.obj", loader);
 
-            RawModel stallModel = ObjLoader
-                    .loadObjFile(
-                            "src/main/resources/stall.obj", loader);
-
-            ModelTexture texture = new ModelTexture(
-                    loader.loadTexture(
-                            "src/main/resources/stall.png"));
-            TexturedModel dragonTexturedModel = new TexturedModel(dragonModel, texture);
-            TexturedModel stallTexturedModel = new TexturedModel(stallModel, texture);
-
-            Entity dragonEntityFrame1 = new Entity(dragonTexturedModel,
-                    new Vector3f(-10, 5, -65), 0, 0, 0, 1);
-
-            Entity stallEntityFrame1 = new Entity(stallTexturedModel,
-                    new Vector3f(-10, -5, -55), 0, 0, 0, 1);
-
-            Entity dragonEntityFrame2 = new Entity(dragonTexturedModel,
-                    new Vector3f(10, 5, -65), 0, 0, 0, 1);
-
-            Entity stallEntityFrame2 = new Entity(stallTexturedModel,
-                    new Vector3f(10, -5, -55), 0, 0, 0, 1);
-
-            Map<TexturedModel, List<Entity>> entitiesFrame1 = new HashMap<>();
-            entitiesFrame1.put(dragonTexturedModel, Collections.singletonList(dragonEntityFrame1));
-            entitiesFrame1.put(stallTexturedModel, Collections.singletonList(stallEntityFrame1));
-
-            Frame frame1 = new Frame(entitiesFrame1);
-
-            Map<TexturedModel, List<Entity>> entitiesFrame2 = new HashMap<>();
-            entitiesFrame2.put(dragonTexturedModel, Collections.singletonList(dragonEntityFrame2));
-            entitiesFrame2.put(stallTexturedModel, Collections.singletonList(stallEntityFrame2));
-
-            Frame frame2 = new Frame(entitiesFrame2);
 
             Scene scene = new Scene();
-            Map<String, Frame> frames = new HashMap<>();
-            frames.put("frame1", frame1);
-            frames.put("frame2", frame2);
-
-            scene.setFrames(frames);
+            scene.setFrames(FramesUtils.createFrames(loader));
 
             MasterRenderer renderer = new MasterRenderer();
 
