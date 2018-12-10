@@ -1,4 +1,4 @@
-import entities.Camera;
+import entities.Frame;
 import entities.FrameUtils;
 import entities.Light;
 import entities.ProcessedObject;
@@ -62,8 +62,6 @@ public class Slave {
                     .setExecutorService(executorService);
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
-            Camera camera = new Camera();
-
 
             Scene scene = new Scene();
             scene.setFrames(FramesUtils.createFrames(loader));
@@ -75,22 +73,24 @@ public class Slave {
                 if (null != processingFrame && !processingFrame.isConsumed()) {
                     Instant start = Instant.now();
 
-                    //                    System.out.println("Frame name: " + processingFrame.getName());
+                    System.out.println("Frame name: " + processingFrame.getName() + " with key: "
+                            + processingFrame.getKeyboard());
 
                     Instant cameraRendering = Instant.now();
-                    camera.move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
+                    Frame frame = scene.getFrames()
+                            .get(processingFrame.getName());
+                    frame.getCamera().move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
 
-                    FrameUtils.prepareFrame(scene.getFrames().get(processingFrame.getName()),
-                            renderer);
-                    ProcessedObject processedObject = renderer.render(light, camera);
+                    FrameUtils.prepareFrame(frame, renderer);
+                    ProcessedObject processedObject = renderer.render(light, frame.getCamera());
 
-                    System.out.println("Camera shaders time = " + Duration
-                            .between(cameraRendering, Instant.now()).toMillis() + " ms.");
+                    System.out.println("Camera shaders time = " + Duration.between(cameraRendering,
+                            Instant.now())
+                            .toMillis() + " ms.");
 
-//                    DisplayManager.updateDisplay();
+                    DisplayManager.updateDisplay();
 
-                    sendingThread
-                            .setCompressingThread(compressingThread)
+                    sendingThread.setCompressingThread(compressingThread)
                             .setMessageProducer(messageProducer)
                             .setSession(producerSession)
                             .setProcessedObject(processedObject);
@@ -100,9 +100,8 @@ public class Slave {
 
                     executorService.awaitTermination(50, TimeUnit.MILLISECONDS);
                     executorService.execute(receiver);
-                    System.out.println(
-                            "Total loop time = " + Duration.between(start, Instant.now()).toMillis()
-                                    + " ms.");
+                    System.out.println("Total loop time = " + Duration.between(start, Instant.now())
+                            .toMillis() + " ms.");
                     System.out.println("------------------------------------------------------");
                 }
             }
@@ -110,14 +109,14 @@ public class Slave {
 
             renderer.cleanUp();
             loader.cleanUp();
-//            DisplayManager.closeDisplay();
+            //            DisplayManager.closeDisplay();
 
         } catch (Exception exp) {
             System.out.println("Caught exception, exiting.");
             exp.printStackTrace(System.out);
 
             loader.cleanUp();
-//            DisplayManager.closeDisplay();
+            //            DisplayManager.closeDisplay();
             System.exit(1);
 
         }
