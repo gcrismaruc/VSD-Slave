@@ -6,7 +6,6 @@ import entities.ProcessingFrame;
 import entities.Scene;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
-import receiver.MessageReceiver;
 import renderer.DisplayManager;
 import renderer.Loader;
 import renderer.MasterRenderer;
@@ -16,8 +15,10 @@ import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.ObjectMessage;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -25,7 +26,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
+import static com.jogamp.common.util.locks.Lock.TIMEOUT;
 
 public class Slave {
 
@@ -55,10 +57,10 @@ public class Slave {
 
             //Start receiving objects
             MessageConsumer messageConsumer = consumerSession.createConsumer(slaveQueue);
-            MessageReceiver receiver = new MessageReceiver(messageConsumer);
-            executorService.execute(receiver);
+//            MessageReceiver receiver = new MessageReceiver(messageConsumer);
+//            executorService.execute(receiver);
 
-            SendingThread sendingThread = new SendingThread().setMessageReceiver(receiver)
+            SendingThread sendingThread = new SendingThread()
                     .setExecutorService(executorService);
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
@@ -68,41 +70,69 @@ public class Slave {
 
             MasterRenderer renderer = new MasterRenderer();
 
+            boolean canConsume = true;
             while (!Display.isCloseRequested()) {
-                ProcessingFrame processingFrame = receiver.getProcessingFrame();
-                if (null != processingFrame && !processingFrame.isConsumed()) {
-                    Instant start = Instant.now();
+                if(canConsume) {
+//                    ProcessingFrame processingFrame = receiver.getProcessingFrame();
 
-                    System.out.println("Frame name: " + processingFrame.getName() + " with key: "
-                            + processingFrame.getKeyboard());
+                    try {
+                        Instant msg = Instant.now();
 
-                    Instant cameraRendering = Instant.now();
-                    Frame frame = scene.getFrames()
-                            .get(processingFrame.getName());
-                    frame.getCamera().move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
+                        Message message = messageConsumer.receive(TIMEOUT);
+                        System.out.println("Receiving one msg = " + Duration.between(msg, Instant.now())
+                                .toMillis() + " ms");
 
-                    FrameUtils.prepareFrame(frame, renderer);
-                    ProcessedObject processedObject = renderer.render(light, frame.getCamera());
+                        ObjectMessage objectMessage = (ObjectMessage) message;
 
-                    System.out.println("Camera shaders time = " + Duration.between(cameraRendering,
-                            Instant.now())
-                            .toMillis() + " ms.");
+                        ProcessingFrame processingFrame = (ProcessingFrame) objectMessage.getObject();
 
-                    DisplayManager.updateDisplay();
+                        if (null != processingFrame && !processingFrame.isConsumed()) {
+                            canConsume = false;
+                            Instant start = Instant.now();
 
-                    sendingThread.setCompressingThread(compressingThread)
-                            .setMessageProducer(messageProducer)
-                            .setSession(producerSession)
-                            .setProcessedObject(processedObject);
-                    executorService.execute(sendingThread);
+                            System.out.println("Frame name: " + processingFrame.getName() + " "
+                                    + "with key: "
+                                    + processingFrame.getKeyboard());
 
-                    processingFrame.setConsumed(true);
+                            Instant cameraRendering = Instant.now();
+                            Frame frame = scene.getFrames()
+                                    .get(processingFrame.getName());
+                            frame.getCamera()
+                                    .move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
 
-                    executorService.awaitTermination(50, TimeUnit.MILLISECONDS);
-                    executorService.execute(receiver);
-                    System.out.println("Total loop time = " + Duration.between(start, Instant.now())
-                            .toMillis() + " ms.");
-                    System.out.println("------------------------------------------------------");
+                            FrameUtils.prepareFrame(frame, renderer);
+                            ProcessedObject processedObject = renderer.render(light, frame
+                                    .getCamera());
+
+                            System.out.println("Camera shaders time = " + Duration.between
+                                    (cameraRendering,
+                                    Instant.now())
+                                    .toMillis() + " ms.");
+
+//                            DisplayManager.updateDisplay();
+
+                            sendingThread.setCompressingThread(compressingThread)
+                                    .setMessageProducer(messageProducer)
+                                    .setSession(producerSession)
+                                    .setProcessedObject(processedObject);
+//                            executorService.execute(sendingThread);
+
+                            sendingThread.run();
+                            processingFrame.setConsumed(true);
+
+//                            executorService.awaitTermination(100, TimeUnit.MILLISECONDS);
+                            //                        executorService.execute(receiver);
+                            System.out.println(
+                                    "Total loop time = " + Duration.between(start, Instant.now())
+                                            .toMillis() + " ms.");
+                            System.out.println(
+                                    "------------------------------------------------------");
+
+                            canConsume = true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             connection.close();

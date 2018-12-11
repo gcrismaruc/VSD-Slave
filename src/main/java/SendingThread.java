@@ -34,7 +34,8 @@ public class SendingThread implements Runnable {
     public void run() {
         Instant start = Instant.now();
         compressingThread.setObject(processedObject);
-        executorService.execute(compressingThread);
+
+        compressingThread.run();
 
         try {
             executorService.awaitTermination(20, TimeUnit.MILLISECONDS);
@@ -53,7 +54,7 @@ public class SendingThread implements Runnable {
         try {
             messageProducer.send(objectMessage, DELIVERY_MODE, Message.DEFAULT_PRIORITY,
                     Message.DEFAULT_TIME_TO_LIVE);
-            messageReceiver.setNeedToConsume(true);
+//            messageReceiver.setNeedToConsume(true);
         } catch (JMSException e) {
             e.printStackTrace();
         }
