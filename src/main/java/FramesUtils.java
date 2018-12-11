@@ -29,10 +29,10 @@ public class FramesUtils {
         TexturedModel stallTexturedModel = new TexturedModel(stallModel, texture);
 
         Entity dragonEntityFrame1 = new Entity(dragonTexturedModel,
-                new Vector3f(-15, 5, -65), 0, 0, 0, 1);
+                new Vector3f(-15, 5, -65), 0, 100, 0, 1);
 
         Entity stallEntityFrame1 = new Entity(stallTexturedModel,
-                new Vector3f(-10, -5, -55), 0, 0, 0, 1);
+                new Vector3f(-10, -5, -55), 0, 180, 0, 1);
 
         Entity dragonEntityFrame2 = new Entity(dragonTexturedModel,
                 new Vector3f(15, 5, -65), 0, 0, 0, 1);

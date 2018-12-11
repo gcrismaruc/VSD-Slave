@@ -1,3 +1,4 @@
+import entities.Camera;
 import entities.Frame;
 import entities.FrameUtils;
 import entities.Light;
@@ -57,11 +58,8 @@ public class Slave {
 
             //Start receiving objects
             MessageConsumer messageConsumer = consumerSession.createConsumer(slaveQueue);
-//            MessageReceiver receiver = new MessageReceiver(messageConsumer);
-//            executorService.execute(receiver);
 
-            SendingThread sendingThread = new SendingThread()
-                    .setExecutorService(executorService);
+            SendingThread sendingThread = new SendingThread().setExecutorService(executorService);
 
             Light light = new Light(new Vector3f(0, 0, -15), new Vector3f(1, 1, 1));
 
@@ -71,64 +69,82 @@ public class Slave {
             MasterRenderer renderer = new MasterRenderer();
 
             boolean canConsume = true;
+            String lastUUID = "firstImage";
+
+            Camera camera = new Camera();
+
             while (!Display.isCloseRequested()) {
-                if(canConsume) {
-//                    ProcessingFrame processingFrame = receiver.getProcessingFrame();
+                if (canConsume) {
 
                     try {
                         Instant msg = Instant.now();
 
                         Message message = messageConsumer.receive(TIMEOUT);
-                        System.out.println("Receiving one msg = " + Duration.between(msg, Instant.now())
-                                .toMillis() + " ms");
+                        System.out.println(
+                                "Receiving one msg = " + Duration.between(msg, Instant.now())
+                                        .toMillis() + " ms");
 
                         ObjectMessage objectMessage = (ObjectMessage) message;
 
-                        ProcessingFrame processingFrame = (ProcessingFrame) objectMessage.getObject();
+                        ProcessingFrame processingFrame = (ProcessingFrame) objectMessage
+                                .getObject();
+                        String uuid = processingFrame.getUuid();
 
                         if (null != processingFrame && !processingFrame.isConsumed()) {
                             canConsume = false;
                             Instant start = Instant.now();
 
-                            System.out.println("Frame name: " + processingFrame.getName() + " "
-                                    + "with key: "
-                                    + processingFrame.getKeyboard());
+                            System.out.println(
+                                    "Frame name: " + processingFrame.getName() + " " + "with key: "
+                                            + processingFrame.getKeyboard());
 
                             Instant cameraRendering = Instant.now();
                             Frame frame = scene.getFrames()
                                     .get(processingFrame.getName());
-                            frame.getCamera()
-                                    .move(processingFrame.getKeyboard(), processingFrame.getMouseWheel());
+
+                            if (!lastUUID.equals("firstImage") && !lastUUID.equals(uuid)) {
+
+                                System.out.println(
+                                        "Moving camera. last uuid: " + lastUUID + " new uuid: "
+                                                + uuid + " frameName: "
+                                                + processingFrame.getName());
+                                camera.move(processingFrame.getKeyboard(),
+                                        processingFrame.getMouseWheel());
+                                lastUUID = uuid;
+                            } else {
+                                System.out.println(
+                                        "No moving camera:  last uuid: " + lastUUID + " new uuid: "
+                                                + uuid + " frameName: "
+                                                + processingFrame.getName());
+                                if (lastUUID.equals("firstImage")) {
+                                    lastUUID = uuid;
+                                }
+                            }
 
                             FrameUtils.prepareFrame(frame, renderer);
-                            ProcessedObject processedObject = renderer.render(light, frame
-                                    .getCamera());
+                            ProcessedObject processedObject = renderer.render(light, camera);
 
-                            System.out.println("Camera shaders time = " + Duration.between
-                                    (cameraRendering,
-                                    Instant.now())
-                                    .toMillis() + " ms.");
-
-//                            DisplayManager.updateDisplay();
+                            System.out.println(
+                                    "Camera shaders time = " + Duration.between(cameraRendering,
+                                            Instant.now())
+                                            .toMillis() + " ms.");
 
                             sendingThread.setCompressingThread(compressingThread)
                                     .setMessageProducer(messageProducer)
                                     .setSession(producerSession)
                                     .setProcessedObject(processedObject);
-//                            executorService.execute(sendingThread);
 
                             sendingThread.run();
                             processingFrame.setConsumed(true);
 
-//                            executorService.awaitTermination(100, TimeUnit.MILLISECONDS);
-                            //                        executorService.execute(receiver);
                             System.out.println(
                                     "Total loop time = " + Duration.between(start, Instant.now())
                                             .toMillis() + " ms.");
-                            System.out.println(
-                                    "------------------------------------------------------");
 
                             canConsume = true;
+
+                            System.out.println(
+                                    "------------------------------------------------------");
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -139,14 +155,14 @@ public class Slave {
 
             renderer.cleanUp();
             loader.cleanUp();
-            //            DisplayManager.closeDisplay();
+//            DisplayManager.closeDisplay();
 
         } catch (Exception exp) {
             System.out.println("Caught exception, exiting.");
             exp.printStackTrace(System.out);
 
             loader.cleanUp();
-            //            DisplayManager.closeDisplay();
+//            DisplayManager.closeDisplay();
             System.exit(1);
 
         }

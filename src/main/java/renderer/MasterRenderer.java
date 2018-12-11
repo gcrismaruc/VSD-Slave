@@ -36,10 +36,10 @@ public class MasterRenderer {
 
         renderer.render(frame);
 
-        ByteBuffer depthBuffer = BufferUtils
-                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
-        ByteBuffer pixels = BufferUtils
-                .createByteBuffer(DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
+        ByteBuffer depthBuffer = BufferUtils.createByteBuffer(
+                DisplayManager.WIDTH * DisplayManager.HEIGHT * 4);
+        ByteBuffer pixels = BufferUtils.createByteBuffer(
+                DisplayManager.WIDTH * DisplayManager.HEIGHT * 3);
 
         GL11.glReadPixels(0, 0, DisplayManager.WIDTH, DisplayManager.HEIGHT, GL_DEPTH_COMPONENT,
                 GL_FLOAT, depthBuffer);
@@ -50,7 +50,8 @@ public class MasterRenderer {
         pixels.get(pxs);
 
         shader.stop();
-        frame.getEntities().clear();
+        frame.getEntities()
+                .clear();
 
         return new ProcessedObject(depth, pxs);
 
@@ -58,14 +59,16 @@ public class MasterRenderer {
 
     public void processEntity(Entity entity) {
         TexturedModel entityModel = entity.getModel();
-        List<Entity> batch = frame.getEntities().get(entityModel);
+        List<Entity> batch = frame.getEntities()
+                .get(entityModel);
 
         if (batch != null) {
             batch.add(entity);
         } else {
             List<Entity> newBatch = new ArrayList<>();
             newBatch.add(entity);
-            frame.getEntities().put(entityModel, newBatch);
+            frame.getEntities()
+                    .put(entityModel, newBatch);
         }
 
     }

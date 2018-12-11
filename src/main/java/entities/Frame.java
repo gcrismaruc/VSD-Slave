@@ -8,11 +8,9 @@ import java.util.Map;
 
 public class Frame {
     private Map<TexturedModel, List<Entity>> entities = new HashMap<>();
-    private Camera camera;
 
     public Frame(Map<TexturedModel, List<Entity>> entities) {
         this.entities = entities;
-        this.camera = new Camera();
     }
 
     public Frame() {
@@ -25,15 +23,6 @@ public class Frame {
     public Frame setEntities(
             Map<TexturedModel, List<Entity>> entities) {
         this.entities = entities;
-        return this;
-    }
-
-    public Camera getCamera() {
-        return camera;
-    }
-
-    public Frame setCamera(Camera camera) {
-        this.camera = camera;
         return this;
     }
 }
